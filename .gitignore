@@ -13,3 +13,4 @@ bin
 outputs
 build
 src/andromede_modeling_prototype.egg-info/
+tests/muessli/case_3_nodes/timeseries/
