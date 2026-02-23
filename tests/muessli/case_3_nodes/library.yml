@@ -16,14 +16,14 @@ library:
   id: muessli-lib
   description: Simple model library with models for area, load, thermal, short-term-storage (ex:batteries), simple model for long-term storage (hydro with weekly allocation)
 
-  port-types:
+  port-types: # Port types are used to define the data flow between models inside the library
     - id: flow
       description: A port which transfers power flow
       fields:
         - id: flow
 
   models:
-    - id: area
+    - id: area # can also be interpreted as a bus
       parameters:
         - id: spillage_cost
         - id: ens_cost
@@ -38,7 +38,9 @@ library:
       binding-constraints:
         - id: balance
           expression: sum_connections(balance_port.flow) = spillage - unsupplied_energy
+      # computes the sum of values of this port field, on all incoming connections from other models.
       objective: expec(sum(spillage_cost * spillage + ens_cost * unsupplied_energy))
+      # expec(X) aggregator: computes its expected value (i.e. its scenario-wise average), and sum() calculates the summation over the time horizon.
 
     - id: load
       parameters:
@@ -82,7 +84,7 @@ library:
           type: flow
         - id: in_port
           type: flow
-      port-field-definitions:
+      port-field-definitions: # a collection of definitions for ports output by this model
         - port: out_port
           field: flow
           definition: flow
@@ -102,7 +104,7 @@ library:
         - id: p_max_cluster_nominal 
           scenario-dependent: false
           time-dependent: false
-        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account.
+        - id: p_max_cluster_modulation # timeseries with adimensional values between 0 and 1. It takes outages into account (availability).
           scenario-dependent: true
           time-dependent: true
         - id: p_min_unit

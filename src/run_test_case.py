@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-from andromede.model.parsing import  parse_yaml_library
+from andromede.model.parsing import parse_yaml_library
 from andromede.model.resolve_library import resolve_library
 from andromede.simulation.optimization import build_problem
 from andromede.simulation.output_values import OutputValues
@@ -156,15 +156,15 @@ class TestCase:
             )
         return spill
 
-    def eval_lold(self):
-        # Returns the loss of load duration by zone, in hours
-        lold = {}
+    def eval_lol(self):
+        # Returns the loss of load duration by zone, in hours # This is not LOLD, but the total number of hours of LOL
+        lol = {}
         for area in self.areas:
-            lold[area] = sum(
+            lol[area] = sum(
                 1 if i > self.tolerance_unsp else 0
                 for i in self.results.component(area).var(self.UNSP_VAR).value[0]
             )
-        return lold
+        return lol
 
     def eval_thermal_prod(self, techno=""):
         # Returns the production from all thermal units from a same technology. If techno is not provided, this sums over all thermal units
@@ -335,28 +335,34 @@ class TestCase:
         )
 
 
-##### Example of use ######
-system_folder = "./tests/muessli/case_3_nodes/" #You can keep this path
-data_folder = "./tests/muessli/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
+# ##### Example of use ######
+import time
+
+system_folder = "../tests/muessli/case_3_nodes" #You can keep this path
+data_folder = "../tests/muessli/case_3_nodes/timeseries" #This path has to be changed depending on where you saved the timeseries folder.
 case = TestCase(system_folder, data_folder)
 T,W = 1, 52
 
-
+start_time = time.time()
 for scenario_index in range(T):
-    #scenario_index may take values between 0 and 999
+    # scenario_index may take values between 0 and 999
     for week_index in range(W):
-        #week_index may take values between 0 and 51
+        # week_index may take values between 0 and 51
         print(
             scenario_index + 1,
             week_index + 1,
             case.simulation(week_index, scenario_index),
         )
-        # Examples of functions to get the input data that changes depending on week/scenario, for proxy-learning purpose
-        # res_load_fr = case.get_load("fr",week_index,scenario_index)
-        # modulation_nuclear_fr = case.get_availability("nuclear_fr",week_index,scenario_index)
+        # test with alternative link capacities
+        alternative_direct_capacities = {'ch_de_link': 5000.0, 'ch_fr_link': 2000.0, 'de_fr_link': 3300.0}
+        alternative_indirect_capacities = {'ch_de_link': 2000.0, 'ch_fr_link': 3000.0, 'de_fr_link': 3300.0}
+        print(case.simulation(week_index, scenario_index,link_direct_capacities=alternative_direct_capacities,link_indirect_capacities=alternative_indirect_capacities))
+        print(case.simulation(week_index, scenario_index))
 
-# test with alternative link capacities
-alternative_direct_capacities = {'ch_de_link': 5000.0, 'ch_fr_link': 2000.0, 'de_fr_link': 3300.0}
-alternative_indirect_capacities = {'ch_de_link': 2000.0, 'ch_fr_link': 3000.0, 'de_fr_link': 3300.0}
-print(case.simulation(week_index, scenario_index,link_direct_capacities=alternative_direct_capacities,link_indirect_capacities=alternative_indirect_capacities))
-print(case.simulation(week_index, scenario_index))
+        # Examples of functions to get the input data that changes depending on week/scenario, for proxy-learning purpose
+        res_load_fr = case.get_load("fr", week_index, scenario_index)
+        modulation_nuclear_fr = case.get_availability("nuclear_fr", week_index, scenario_index)
+
+end_time = time.time()
+
+print(f"Total computation time for {T} scenarios and {W} weeks : {end_time - start_time} seconds")
